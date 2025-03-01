@@ -631,8 +631,8 @@ if __name__ == "__main__":
     # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-    # ports=TwinCams.cameras_orientation(2,4, stream = True)
-    # TwinCams.stereo_cam_take_photo(ports, timer=6, max_number=10)
-    # TwinCams.stereo_calibrator()
+    ports=TwinCams.cameras_orientation(2,4, stream = True)
+    TwinCams.stereo_cam_take_photo(ports, timer=6, max_number=10)
+    TwinCams.stereo_calibrator()
     TwinCams.distance_calc((2,4))
     
