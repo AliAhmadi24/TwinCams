@@ -6,6 +6,6 @@ Note that holding the board during calibration is a bit tricky, and you may need
 
 This video is an example of measuring the length of an A4 sheet (Actual length is 297 mm):
 
-
+Note that this was recorded when I used my old codes, so the code in background is different from what you see in this repo.
 https://github.com/user-attachments/assets/5b1e3947-87b6-45f1-a299-38e99de085d6
 
