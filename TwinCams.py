@@ -482,6 +482,109 @@ class TwinCams:
         sd.play(wave_data, sample_rate)
         sd.wait()  
     # *****************************************************************************************************************************
+    def return_3d_point (relative_path): # this function gets path of photos from two cameras and returns a 3d point based on the inputs of the client
+        global click_count1
+        global click_count2
+        global point1_webcam1, point1_webcam2
+
+        point1_webcam1 = None
+        point1_webcam2 = None
+
+        # to handle mouse click events
+        click_count1 = 0
+        click_count2=0
+        
+        # a function to handle clicking:
+        def click_event(event, x, y, flags, param):
+            global click_count1
+            global click_count2
+            global point1_webcam1, point1_webcam2
+
+            if event == cv2.EVENT_LBUTTONDOWN:
+                if param == 1:
+                    point1_webcam1 = (x, y)
+                    print(f"Webcam 1 - Point 1: ({x}, {y})")
+                    click_count1 += 1
+
+                elif param == 2:
+                    point1_webcam2 = (x, y)
+                    print(f"Webcam 2 - Point 1: ({x}, {y})")
+                    click_count2 += 1
+        
+
+        # Check images folders:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        photo_directory_left = os.path.join(base_dir, relative_path, "Left")
+        photo_directory_right = os.path.join(base_dir, relative_path, "Right")
+
+        if not os.path.exists(photo_directory_left):
+            print("No left images folder found")
+            return 0
+        if not os.path.exists(photo_directory_right):
+            print("No right images folder found")
+            return 0
+        
+        else:
+            existing_photos_left = [f for f in os.listdir(photo_directory_left) if re.match(r'photo(\d+)\.jpg', f)]
+            existing_photos_right = [f for f in os.listdir(photo_directory_right) if re.match(r'photo(\d+)\.jpg', f)]
+            if not existing_photos_left or not existing_photos_right:
+                print("no photo has been already saved in one or both directories.")
+                return 0
+
+
+        images_right = glob.glob(relative_path + '/Right/*.jpg')
+        images_left = glob.glob(relative_path + '/Left/*.jpg')
+
+        images_left.sort()
+        images_right.sort()
+
+        M1, M2, d1, d2, P1, P2 = TwinCams.load_calibration_result()
+        # Set up windows for the webcam outputs
+        
+        cv2.namedWindow("Webcam 1")
+        cv2.setMouseCallback("Webcam 1", click_event, param=1)
+
+        cv2.namedWindow("Webcam 2")
+        cv2.setMouseCallback("Webcam 2", click_event, param=2)  
+        calculated_3d_points=[]
+        
+        for i, fname in enumerate(images_right):
+            while True:
+                frame_left = cv2.imread(images_left[i])
+                frame_right = cv2.imread(images_right[i])
+                # Draw circles on clicked points
+                if point1_webcam1:
+                    cv2.circle(frame_left, point1_webcam1, 5, (0, 255, 0), -1)  # Green circle on webcam 1
+                if point1_webcam2:
+                    cv2.circle(frame_right, point1_webcam2, 5, (0, 0, 255), -1)  # Red circle on webcam 2
+
+                cv2.imshow("Webcam 1", frame_left)
+                cv2.imshow("Webcam 2", frame_right)
+
+                if point1_webcam1 and point1_webcam2:
+
+                    points3D_1 = TwinCams.point_3d_calc(point1_webcam1, point1_webcam2, M1, M2, d1, d2, P1, P2)
+                    calculated_3d_points.append(points3D_1)
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    midpoint1 = (point1_webcam1[0] , point1_webcam1[1])
+                    midpoint2 = (point1_webcam2[0], point1_webcam2[1] )
+                    font_scale = 1
+                    font_color = (255, 0, 0)  # Blue color in BGR
+                    font_thickness = 2
+                    number = np.array2string((np.round(points3D_1,0)))
+                    cv2.putText(frame_left, number, midpoint1, font, font_scale, font_color, font_thickness, cv2.LINE_AA)
+                    cv2.putText(frame_right, number, midpoint2, font, font_scale, font_color, font_thickness, cv2.LINE_AA)
+                    cv2.imshow("Webcam 1", frame_left)
+                    cv2.imshow("Webcam 2", frame_right)
+                    cv2.waitKey(3000)
+                    break
+                # Wait for keypress to exit the loop
+                key= cv2.waitKey(1) & 0xFF
+                if key in [ord('q'), ord('Q')]:  # Press 'q' to quit
+                    break
+        cv2.destroyAllWindows()
+        return calculated_3d_points
+    # *****************************************************************************************************************************
     def distance_calc (ports):
         global click_count1
         global click_count2
@@ -623,6 +726,7 @@ if __name__ == "__main__":
         # TwinCams.stereo_calibrator --> after taking pictures, use this one. press "q" if chessboard is not shown well, otherwise press "s". Dont forget to change these parameters according to your setup:
                                                                                             # square_width, length_unit,chessboard_column, chessboard_row
         # TwinCams.load_calibration_result --> load calibration results from the previous function and also does some calculations
+        # TwinCams.return_3d_point --> this one gets a relative path of a folder which contains left and rights phots, then open photos and you can get points in 3d by clicking on the same points on the two frames
         # TwinCams.point_3d_calc --> calculates the point which is represented in the view of each cameras separately in the general coordinate system in 3d coordinates
         # TwinCams.do_beep --> just generates a beep and it is used in auto capturing mode
         # TwinCams.distance_calc --> you can click on the points you want to calculate the distance between two points in the real world. note that the order of clicking on the points on each
@@ -632,7 +736,7 @@ if __name__ == "__main__":
 
 
     ports=TwinCams.cameras_orientation(2,4, stream = True)
-    TwinCams.stereo_cam_take_photo(ports, timer=6, max_number=10)
-    TwinCams.stereo_calibrator()
-    TwinCams.distance_calc((2,4))
+    # TwinCams.stereo_cam_take_photo((2,4), timer=5, max_number=8)
+    # TwinCams.stereo_calibrator(search_window_size=(4,4))
+    # TwinCams.distance_calc((2,4))
     
