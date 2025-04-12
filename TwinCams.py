@@ -1,4 +1,23 @@
+''' %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    AA's note: a summary about functions: 
+    TwinCams.find_camera_ports --> this function shows you ports number of your webcams/cameras.
+    TwinCams.cameras_orientation --> It is very important that the order of cameras in calibration and other parts of your project be the same. This one returns ports in (left, right) order
+    TwinCams.single_cam_take_photo --> takes photo upon you press "s" key and save it. click "q" to exit. Also you can use timer and set the number of photos to take pictures automatically.
+    TwinCams.stereo_cam_take_photo --> same as previous one but for stereo setup. note that for stereo calibration you need to take pictures for both cameras at the same time.
+    TwinCams.fps_calc --> this is used within other function to calcualte fps of your camera/cameras stream
+    TwinCams.stereo_calibrator --> after taking pictures, use this one. press "q" if chessboard is not shown well, otherwise press "s". Dont forget to change these parameters according to your setup:
+                                                                                        square_width, length_unit,chessboard_column, chessboard_row
+    TwinCams.load_calibration_result --> load calibration results from the previous function and also does some calculations
+    TwinCams.return_3d_point --> this one gets a relative path of a folder which contains left and rights phots, then open photos and you can get points in 3d by clicking on the same points on the two frames
+    TwinCams.point_3d_calc --> calculates the point which is represented in the view of each cameras separately in the general coordinate system in 3d coordinates
+    TwinCams.do_beep --> just generates a beep and it is used in auto capturing mode: this function is commented in this version 
+    TwinCams.distance_calc --> you can click on the points you want to calculate the distance between two points in the real world. note that the order of clicking on the points on each
+                                                                                            window is very important.
+    TwinCams.euclidean_distance --> use to calculate distance between two points.
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% '''
+
 import os
+import importlib.util
 import re
 import time
 import cv2
@@ -8,7 +27,13 @@ import shutil
 import numpy as np
 import glob
 import pickle
-import sounddevice as sd
+# import sounddevice: since it does no vital thing in the code, if it isnt installed on your system, it passed.
+if (spec:= importlib.util.find_spec('sounddevice') is not None):
+    import sounddevice as sd
+    sd_flag = True
+else:
+    sd_flag = False
+
 
 class TwinCams:
 
@@ -476,11 +501,14 @@ class TwinCams:
         return point_3d
     # *****************************************************************************************************************************
     def do_beep(frequency = 300, duration= 0.5, sample_rate=44100): # this function create a sound for auto capturing mode
-        t = np.linspace(0, duration, int(sample_rate * duration), False)
-        wave_data = (0.5 * np.sin(2 * np.pi * frequency * t) * 32767).astype(np.int16)
+        if sd_flag:
+            t = np.linspace(0, duration, int(sample_rate * duration), False)
+            wave_data = (0.5 * np.sin(2 * np.pi * frequency * t) * 32767).astype(np.int16)
 
-        sd.play(wave_data, sample_rate)
-        sd.wait()  
+            sd.play(wave_data, sample_rate)
+            sd.wait()  
+        else:
+            pass
     # *****************************************************************************************************************************
     def return_3d_point (relative_path): # this function gets path of photos from two cameras and returns a 3d point based on the inputs of the client
         global click_count1
@@ -716,27 +744,11 @@ class TwinCams:
 
     # *****************************************************************************************************************************
 if __name__ == "__main__": 
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        # a summary about functions: 
-        # TwinCams.find_camera_ports --> this function shows you ports number of your webcams/cameras.
-        # TwinCams.cameras_orientation --> It is very important that the order of cameras in calibration and other parts of your project be the same. This one returns ports in (left, right) order
-        # TwinCams.single_cam_take_photo --> takes photo upon you press "s" key and save it. click "q" to exit. Also you can use timer and set the number of photos to take pictures automatically.
-        # TwinCams.stereo_cam_take_photo --> same as previous one but for stereo setup. note that for stereo calibration you need to take pictures for both cameras at the same time.
-        # TwinCams.fps_calc --> this is used within other function to calcualte fps of your camera/cameras stream
-        # TwinCams.stereo_calibrator --> after taking pictures, use this one. press "q" if chessboard is not shown well, otherwise press "s". Dont forget to change these parameters according to your setup:
-                                                                                            # square_width, length_unit,chessboard_column, chessboard_row
-        # TwinCams.load_calibration_result --> load calibration results from the previous function and also does some calculations
-        # TwinCams.return_3d_point --> this one gets a relative path of a folder which contains left and rights phots, then open photos and you can get points in 3d by clicking on the same points on the two frames
-        # TwinCams.point_3d_calc --> calculates the point which is represented in the view of each cameras separately in the general coordinate system in 3d coordinates
-        # TwinCams.do_beep --> just generates a beep and it is used in auto capturing mode
-        # TwinCams.distance_calc --> you can click on the points you want to calculate the distance between two points in the real world. note that the order of clicking on the points on each
-                                                                                                # window is very important.
-        # TwinCams.euclidean_distance --> use to calculate distance between two points.
-    # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 
     ports=TwinCams.cameras_orientation(2,4, stream = True)
-    # TwinCams.stereo_cam_take_photo((2,4), timer=5, max_number=8)
+    # TwinCams.stereo_cam_take_photo((2,4), timer=5, max_number=8) 
     # TwinCams.stereo_calibrator(search_window_size=(4,4))
     # TwinCams.distance_calc((2,4))
     
