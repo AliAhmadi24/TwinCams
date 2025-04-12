@@ -1,19 +1,22 @@
 ''' %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     AA's note: a summary about functions: 
-    TwinCams.find_camera_ports --> this function shows you ports number of your webcams/cameras.
-    TwinCams.cameras_orientation --> It is very important that the order of cameras in calibration and other parts of your project be the same. This one returns ports in (left, right) order
-    TwinCams.single_cam_take_photo --> takes photo upon you press "s" key and save it. click "q" to exit. Also you can use timer and set the number of photos to take pictures automatically.
-    TwinCams.stereo_cam_take_photo --> same as previous one but for stereo setup. note that for stereo calibration you need to take pictures for both cameras at the same time.
-    TwinCams.fps_calc --> this is used within other function to calcualte fps of your camera/cameras stream
-    TwinCams.stereo_calibrator --> after taking pictures, use this one. press "q" if chessboard is not shown well, otherwise press "s". Dont forget to change these parameters according to your setup:
+    1. TwinCams.find_camera_ports --> this function shows you ports number of your webcams/cameras.
+    2. TwinCams.cameras_orientation --> It is very important that the order of cameras in calibration and other parts of your project be the same. This one returns ports in (left, right) order
+    3. TwinCams.single_cam_take_photo --> takes photo upon you press "s" key and save it. click "q" to exit. Also you can use timer and set the number of photos to take pictures automatically.
+    4. TwinCams.stereo_cam_take_photo --> same as previous one but for stereo setup. note that for stereo calibration you need to take pictures for both cameras at the same time.
+    5. TwinCams.fps_calc --> this is used within other function to calcualte fps of your camera/cameras stream
+    6. TwinCams.stereo_calibrator --> after taking pictures, use this one. press "q" if chessboard is not shown well, otherwise press "s". Dont forget to change these parameters according to your setup:
                                                                                         square_width, length_unit,chessboard_column, chessboard_row
-    TwinCams.load_calibration_result --> load calibration results from the previous function and also does some calculations
-    TwinCams.return_3d_point --> this one gets a relative path of a folder which contains left and rights phots, then open photos and you can get points in 3d by clicking on the same points on the two frames
-    TwinCams.point_3d_calc --> calculates the point which is represented in the view of each cameras separately in the general coordinate system in 3d coordinates
-    TwinCams.do_beep --> just generates a beep and it is used in auto capturing mode: this function is commented in this version 
-    TwinCams.distance_calc --> you can click on the points you want to calculate the distance between two points in the real world. note that the order of clicking on the points on each
+    7. TwinCams.load_calibration_result --> load calibration results from the previous function and also does some calculations
+    8. TwinCams.return_3d_point --> this one gets a relative path of a folder which contains left and rights phots, then open photos and you can get points in 3d by clicking on the same points on the two frames
+    9. TwinCams.point_3d_calc --> calculates the point which is represented in the view of each cameras separately in the general coordinate system in 3d coordinates
+    10. TwinCams.do_beep --> just generates a beep and it is used in auto capturing mode: this function is commented in this version 
+    11. TwinCams.distance_calc --> you can click on the points you want to calculate the distance between two points in the real world. note that the order of clicking on the points on each
                                                                                             window is very important.
-    TwinCams.euclidean_distance --> use to calculate distance between two points.
+    12. TwinCams.euclidean_distance --> use to calculate distance between two points.
+    13. TwinCams.frame_flow --> if you have a function that requires frames of live cameras, you can use this function. it feeds the function with frames.
+                            your function must follow this structure: "function_name(frame/frames)"
+    14. TwinCams.show_image: this function has been written in order to test and check process_function in TwinCams.frame_flow
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% '''
 
 import os
@@ -474,6 +477,94 @@ class TwinCams:
 
         cv2.destroyAllWindows()
     # *****************************************************************************************************************************
+    @staticmethod # main usage of this function is to feed frame to a process_function with some options
+    def frame_flow(camera_ports, process_function=None, show_frame=True, show_fps=True ,stack_mode='vstack', stack_state=True):
+        if isinstance(camera_ports, int):
+            camera_ports = [camera_ports]
+
+        ports_number=len(camera_ports)
+        # read and check ports
+        caps = [cv2.VideoCapture(port) for port in camera_ports]
+        for idx, cap in enumerate(caps):
+            if not cap.isOpened():
+                print(f"port number{camera_ports(idx)} can not be openned")
+        
+        # mian fram flow while:
+        old_time = time.time()
+        while True:
+            frames=[]
+            main_frame=[]
+            for cap in caps:
+                ret , frame = cap.read()
+                if not ret: 
+                    print(f"failed to grab frame from cameras or ports.")
+                    exit
+                frames.append(frame)
+            
+            # handling frames
+            if stack_state == True and len(frames)>1:
+                stack_frame=frames[0]
+                for i in range(1,len(frames)):
+                    if stack_mode == 'vstack':
+                        stack_frame = np.vstack((stack_frame, frames[i]))
+                    elif stack_mode == 'hstack':
+                        stack_frame = np.hstack((stack_frame, frames[i]))
+                    else:
+                        print("invalid stack mode")
+                        exit
+                main_frame = stack_frame
+
+            elif stack_state == True and len(frame)<=1:
+                print("not enough frames to stack")
+                exit
+            else:
+                main_frame = frames
+            
+
+            if not process_function == None:
+                process_function(main_frame)
+
+
+            if show_fps == True:
+                old_time, main_frame = TwinCams.fps_calc(old_time, main_frame)
+
+
+            if show_frame == True:
+                if isinstance(main_frame, list):  # Check if frames is a list
+                    for idx, frame in enumerate(main_frame):
+                        cv2.imshow(f"frame_{idx}", frame)
+
+                else:  # Single frame
+                    cv2.imshow("main_frame", main_frame)
+
+
+                key = cv2.waitKey(1) & 0xFF
+
+                if key in [ord('q'), ord('Q')] : 
+                    print("Exiting function.")
+                    break    
+
+        for cap in caps:
+            cap.release()
+        cv2.destroyAllWindows()
+    # *****************************************************************************************************************************
+    @staticmethod
+    def show_image(main_frame): # this function has been written in order to test and check process_function in TwinCams.frame_flow
+        if isinstance(main_frame, list):  # Check if frames is a list
+            for idx, frame in enumerate(main_frame):
+                cv2.imshow(f"frame__{idx}", frame)
+
+        else:  # Single frame
+            cv2.imshow("main__frame", main_frame)
+
+
+        key = cv2.waitKey(1) & 0xFF
+
+        if key in [ord('q'), ord('Q')]: 
+            print("Exiting function..")
+            cv2.destroyAllWindows()
+            exit()
+    # *****************************************************************************************************************************
     def load_calibration_result(result_path='stereo_calibration.pkl' ): # tihs function reads values from calibration result file
                                                                         # and calculates needed variables
         with open(result_path, 'rb') as f:
@@ -751,4 +842,5 @@ if __name__ == "__main__":
     # TwinCams.stereo_cam_take_photo((2,4), timer=5, max_number=8) 
     # TwinCams.stereo_calibrator(search_window_size=(4,4))
     # TwinCams.distance_calc((2,4))
-    
+    # TwinCams.frame_flow((2,4), process_function=None, show_frame=True, stack_mode='vstack', stack_state=True)
+    TwinCams.frame_flow((2,4), process_function=TwinCams.show_image, show_frame=False, stack_mode='vstack', stack_state=True)
