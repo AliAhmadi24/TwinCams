@@ -477,7 +477,7 @@ class TwinCams:
 
         cv2.destroyAllWindows()
     # *****************************************************************************************************************************
-    @staticmethod # main usage of this function is to feed frame to a process_function with some options
+    @staticmethod # main usage of this function is to feed frame to a process_function with some options. your function can return a frame or None
     def frame_flow(camera_ports, process_function=None, show_frame=True, show_fps=True ,stack_mode='vstack', stack_state=True):
         if isinstance(camera_ports, int):
             camera_ports = [camera_ports]
@@ -522,7 +522,9 @@ class TwinCams:
             
 
             if not process_function == None:
-                process_function(main_frame)
+                new_main_frame = process_function(main_frame)
+                if new_main_frame is not None:
+                    main_frame = new_main_frame
 
 
             if show_fps == True:
