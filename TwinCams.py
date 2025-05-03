@@ -386,8 +386,8 @@ class TwinCams:
                 print("no photo has been already saved in one or both directories.")
                 return 0
 
-        images_right = glob.glob(relative_path + '/Right/*.jpg')
-        images_left = glob.glob(relative_path + '/Left/*.jpg')
+        images_right = glob.glob(photo_directory_right + '/*.jpg')
+        images_left = glob.glob(photo_directory_left + '/*.jpg')
             
         images_left.sort()
         images_right.sort()
@@ -653,9 +653,8 @@ class TwinCams:
                 return 0
 
 
-        images_right = glob.glob(relative_path + '/Right/*.jpg')
-        images_left = glob.glob(relative_path + '/Left/*.jpg')
-
+        images_right = glob.glob(photo_directory_right + '/*.jpg')
+        images_left = glob.glob(photo_directory_left + '/*.jpg')
         images_left.sort()
         images_right.sort()
 
