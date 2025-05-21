@@ -842,6 +842,6 @@ if __name__ == "__main__":
     ports=TwinCams.cameras_orientation(2,4, stream = True)
     # TwinCams.stereo_cam_take_photo((2,4), timer=5, max_number=8) 
     # TwinCams.stereo_calibrator(search_window_size=(4,4))
-    # TwinCams.distance_calc((2,4))
+    TwinCams.distance_calc((2,4))
     # TwinCams.frame_flow((2,4), process_function=None, show_frame=True, stack_mode='vstack', stack_state=True)
-    TwinCams.frame_flow((2,4), process_function=TwinCams.show_image, show_frame=False, stack_mode='vstack', stack_state=True)
+    # TwinCams.frame_flow((2,4), process_function=TwinCams.show_image, show_frame=False, stack_mode='vstack', stack_state=True)
