@@ -1,3 +1,7 @@
 GeoCalibration/
 
 Photos/
+
+__ptcache__/
+
+*.pyc
